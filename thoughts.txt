@@ -1,0 +1,83 @@
+Suppose the running JVM version is 11, and the main class's bytecode is Java 8.
+But we want users to upgrade to 21 now. How can we infer, at launch time,
+this newly increased *recommended* version of Java?
+Use system properties passed by Jaunch. See app-launcher README.md.
+
+Order of events:
+
+1. Updater brings down new/final version of imagej-updater from the Java-8
+   update site, as well as app-launcher.jar, jaunch natives + configs
+   **BUT NOT new macOS Info.plist**.
+   All of this should be safe, even if someone has a Mac that refuses to launch
+   with Jaunch for some reason (too-old OS?), because the old launcher +
+   imagej-launcher.jar are still there for the moment and they can fall back.
+   We could rename the launcher to a .backup file in a later step below, but
+   only after we know Jaunch is already working.
+
+2. Upon restart, app-launcher is the first line of defense. It will:
+   - determine the versions of Java:
+     - curr - currently running
+     - inst - currently installed (in java/<platform> folder)
+     - reqd - minimum required (fed by Jaunch)
+     - recm - currently recommended minimum (fed by Jaunch)
+   - three cases:
+     A) GOOD (curr >= recm)
+     B) ADEQUATE (recm > curr >= reqd)
+     C) BAD (reqd > curr)
+   - if GOOD: proceed to ClassLauncher
+   - if ADEQUATE or BAD, run JavaUpgrader instead
+
+   - JavaUpgrader has two cases:
+     A) BUNDLED (current jvm is inside ${scijava.app.java-base-directory})
+     B) EXTERNAL (current jvm is from somewhere else)
+     if EXTERNAL, we do not offer to upgrade. but still warn
+     about being below version hard or soft minimums.
+     ADEQUATE: "Your bundled version of Java is below the recommended minimum of x.y.z."
+     BAD: "Your bundled version of Java is below the required minimum of x.y.z."
+     Next step if BUNDLED:
+     - ADEQUATE: "Would you like to upgrade it?" Upgrade / Not now / Never ask again
+     - BAD: "It is strongly recommended to upgrade it, or ${scijava.app.name} may not work properly." Upgrade / Not now / Never ask again
+     Next step if EXTERNAL:
+     - ADEQUATE: "For best results, it is recommended to use ..." OK / Never warn me about this again
+     - BAD: "Are you sure you want to continue? ${scijava.app.name} may not work properly." Quit / Proceed this time / Proceed and never ask again
+
+   - ...unless launching causes UnsupportedClassVersionError, in which case
+     the logic above about "running version is less than min version" triggers
+   - All of the above is nice, but still not good enough for the case where
+     the *running* Java is too old but the recommended Java has already been
+     downloaded and installed... in that case, we need to tell the user to
+     launch Fiji in a way that actually uses it!
+
+3. After passing the imagej-launcher checks, Fiji starts up. The imagej-updater,
+   if it is allowed/configured to run, also checks whether Fiji was launched by
+   the ImageJ launcher, Jaunch, or some other way.
+  
+3A) If ImageJ launcher, issue a warning in the GUI (console if headless),
+    stating that in order to receive further updates, the new Jaunch launcher
+    must now be used, and ask the user whether they want to relaunch Fiji
+    using Jaunch instead. ONLY DO THIS IF JAUNCH IS ACTUALLY PRESENT THOUGH.
+    Options: Relaunch, Not now, Never ask again. (It's tempting to stop
+    checking for updates in the no/never case, but we might want to push out a
+    fix or two to the Java-8 update site, particularly fixes relating to this
+    very upgrade progress, so we'll still check just in case.)
+    - If yes: use ProcessBuilder to do a basic Jaunch launch, then exit(0).
+      (ProcessBuilder processes do survive after parent process ends.)
+      This new launch will then hit the imagej-launcher gatekeeping again,
+      prompting for a Java upgrade as appropriate.
+
+3B) If Jaunch is used, the Updater can go to town being "helpful". But we need
+    to ASK the user about each of these things. They can say Yes or No to each.
+    - IF NEW ENOUGH JAVA: switch the update site track from ImageJ+Fiji+Java-8
+    over to the new Fiji core update sites: https://sites.imagej.net/Fiji/
+    before checking for updates. Maybe don't need to ask permission for this,
+    because they're already using Jaunch and have upgraded their Java properly.
+    - update the .desktop files on Linux
+    - update the Info.plist on macOS (negating any local modifications)
+    - hack Windows shortcuts?? How? Probably just check for .lnk files in
+      common places %HomePath%/Desktop and %AppData% and C:\ProgramData\Microsoft\Windows\Start Menu\Programs.
+
+MAKE SURE the Updater follows 301 redirects properly STARTING NOW.
+So that in the future, we can move away from sites.imagej.net in favor of
+maybe sites.fiji.sc or something else...
+
+
