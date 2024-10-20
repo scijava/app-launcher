@@ -76,7 +76,7 @@ public final class Dialogs {
 	}
 
 	public static void main(String[] args) {
-		System.setProperty("scijava.app.look-and-feel", "com.formdev.flatlaf.FlatLightLaf");
+		//System.setProperty("scijava.app.look-and-feel", "com.formdev.flatlaf.FlatLightLaf");
 		Result result = Dialogs.ask(null,
 			"Do you like green eggs and ham?",
 			"Yes",
