@@ -90,7 +90,7 @@ public class ClassLauncher {
 					for (final String jarPath : jarPaths.split(File.pathSeparator)) {
 						final File jarDir = new File(jarPath);
 						if (!jarDir.exists()) continue;
-						ClassLoaderPlus.getRecursively(classLoader, true, jarDir);
+						classLoader = ClassLoaderPlus.getRecursively(classLoader, true, jarDir);
 					}
 					break;
 				case "-pass-classpath":
