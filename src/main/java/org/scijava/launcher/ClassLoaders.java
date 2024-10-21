@@ -29,6 +29,8 @@
 
 package org.scijava.launcher;
 
+import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,7 +116,8 @@ final class ClassLoaders {
 		for (ClassLoader classLoader : classLoaders) {
 			try {
 				classLoader.loadClass(noSlashes);
-			} catch (ClassNotFoundException exc) {
+			}
+			catch (ClassNotFoundException exc) {
 				failures.add(exc);
 			}
 		}
@@ -127,11 +130,24 @@ final class ClassLoaders {
 	}
 
 	static URL loadResource(Class<?> fallback, String path) {
-		return loaders(fallback)
+		// Try loading the resource using available class loaders.
+		URL url = loaders(fallback)
 			.map(classLoader -> classLoader.getResource(path))
 			.filter(Objects::nonNull)
 			.findFirst()
-			.orElseThrow(() -> new IllegalArgumentException("Failed to load resource: " + path));
+			.orElse(null);
+		if (url != null) return url;
+
+		// No class loader loaded it; try treating it as a file path.
+		try {
+			File resourceFile = new File(path);
+			if (resourceFile.exists()) return new File(path).toURI().toURL();
+		}
+		catch (MalformedURLException exc) {
+			Log.debug(exc);
+		}
+
+		throw new IllegalArgumentException("Failed to load resource: " + path);
 	}
 
 	/** Extracts the internal class version from the given exception. */
