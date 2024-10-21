@@ -61,7 +61,7 @@ public class JarLauncher {
 	/**
 	 * Helper to launch .jar files (by inspecting their Main-Class attribute).
 	 */
-	public static void launchJar(final String jarPath, final String[] arguments) {
+	private static void launchJar(final String jarPath, final String[] arguments) {
 		JarFile jar = null;
 		try {
 			jar = new JarFile(jarPath);

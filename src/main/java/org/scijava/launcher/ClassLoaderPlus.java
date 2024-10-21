@@ -46,7 +46,7 @@ import java.util.Set;
  * 
  * @author Johannes Schindelin
  */
-public class ClassLoaderPlus extends URLClassLoader {
+class ClassLoaderPlus extends URLClassLoader {
 
 	// A frozen ClassLoaderPlus will add only to the urls array
 	protected static Set<ClassLoader> frozen = new HashSet<>();

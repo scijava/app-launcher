@@ -74,7 +74,7 @@ public class ClassLauncher {
 		catch (Throwable t) { Log.error(t); }
 	}
 
-	protected static void run(String[] args) {
+	private static void run(String[] args) {
 		boolean passClasspath = false;
 		URLClassLoader classLoader = null;
 		int i = 0;
@@ -128,11 +128,11 @@ public class ClassLauncher {
 		}
 	}
 
-	protected static String[] slice(final String[] array, final int from) {
+	private static String[] slice(final String[] array, final int from) {
 		return slice(array, from, array.length);
 	}
 
-	protected static String[] slice(final String[] array, final int from,
+	private static String[] slice(final String[] array, final int from,
 		final int to)
 	{
 		final String[] result = new String[to - from];
@@ -140,7 +140,7 @@ public class ClassLauncher {
 		return result;
 	}
 
-	protected static String[] prepend(final String[] array, final String... before) {
+	private static String[] prepend(final String[] array, final String... before) {
 		if (before.length == 0) return array;
 		final String[] result = new String[before.length + array.length];
 		System.arraycopy(before, 0, result, 0, before.length);
@@ -148,7 +148,7 @@ public class ClassLauncher {
 		return result;
 	}
 
-	protected static void launch(ClassLoader classLoader,
+	static void launch(ClassLoader classLoader,
 		final String className, final String... args)
 	{
 		Class<?> main = null;
