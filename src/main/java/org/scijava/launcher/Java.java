@@ -165,11 +165,23 @@ public class Java {
 	}
 
 	public static boolean isBelowMinimum() {
-		return Versions.compare(currentVersion(), minimumVersion()) < 0;
+		try {
+			return Versions.compare(currentVersion(), minimumVersion()) < 0;
+		}
+		catch (IllegalStateException exc) {
+			Log.debug(exc);
+			return false; // No minimum version specified.
+		}
 	}
 
 	public static boolean isBelowRecommended() {
-		return Versions.compare(currentVersion(), recommendedVersion()) < 0;
+		try {
+			return Versions.compare(currentVersion(), recommendedVersion()) < 0;
+		}
+		catch (IllegalStateException exc) {
+			Log.debug(exc);
+			return false; // No recommended version specified.
+		}
 	}
 
 	public static Path home() {
