@@ -95,7 +95,7 @@ public class Splash {
 
 		window.setVisible(true);
 
-		// Watch for other windows; kill the splash window when one shows up.
+		// Kill the splash window when any other window shows up.
 		Thread thread = new Thread(() -> {
 			while (true) {
 				try {

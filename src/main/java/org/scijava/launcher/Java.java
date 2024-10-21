@@ -68,7 +68,8 @@ public class Java {
 		if (!isBelowRecommended()) return; // The running Java version is all good! \^_^/
 		String appName = ClassLauncher.appName("the application");
 		String warnAboutOldJavaVersion =
-			"The Java version currently in use is below the " +
+			"The Java version currently in use, " + currentVersion() +
+			", is below the " +
 			(isBelowMinimum() ?
 				"<strong>required</strong> minimum of " + minimumVersion() :
 				"recommended minimum of " + recommendedVersion()) +
