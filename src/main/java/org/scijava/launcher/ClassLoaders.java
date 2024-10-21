@@ -92,7 +92,7 @@ final class ClassLoaders {
 			Thread.currentThread().getContextClassLoader(),
 			ClassLoader.getSystemClassLoader(),
 			fallback == null ? null : fallback.getClassLoader()
-		).filter(Objects::nonNull);
+		).distinct().filter(Objects::nonNull);
 	}
 
 	/**
