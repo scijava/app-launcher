@@ -33,8 +33,11 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
@@ -77,7 +80,7 @@ public final class Downloader {
 		ExecutorService executor = Executors.newSingleThreadExecutor();
 		return executor.submit(() -> {
 			try (
-				ReadableByteChannel rbc = Channels.newChannel(source.openStream());
+				ReadableByteChannel rbc = Channels.newChannel(openStream(source));
 				FileOutputStream fos = new FileOutputStream(dest)
 			) {
 				FileChannel fileChannel = fos.getChannel();
@@ -114,9 +117,19 @@ public final class Downloader {
 
 	public static List<String> downloadText(URL source) throws IOException {
 		try (BufferedReader reader = new BufferedReader(
-			new InputStreamReader(source.openStream())))
+			new InputStreamReader(openStream(source))))
 		{
 			return reader.lines().collect(Collectors.toList());
 		}
+	}
+
+	/** Like {@link URL#openStream()}, but following HTTP 3xx redirects. */
+	public static InputStream openStream(URL source) throws IOException {
+		URLConnection conn = source.openConnection();
+		if (conn instanceof HttpURLConnection) {
+			// Follow 3xx redirects automatically.
+			((HttpURLConnection) conn).setInstanceFollowRedirects(true);
+		}
+		return conn.getInputStream();
 	}
 }
