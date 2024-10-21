@@ -115,7 +115,7 @@ final class ClassLoaders {
 		List<ClassLoader> classLoaders = loaders(preferred).collect(Collectors.toList());
 		for (ClassLoader classLoader : classLoaders) {
 			try {
-				classLoader.loadClass(noSlashes);
+				return classLoader.loadClass(noSlashes);
 			}
 			catch (ClassNotFoundException exc) {
 				failures.add(exc);
