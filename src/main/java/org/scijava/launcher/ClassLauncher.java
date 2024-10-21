@@ -86,7 +86,7 @@ public class ClassLauncher {
 					classLoader = ClassLoaderPlus.get(classLoader, new File(args[++i]));
 					break;
 				case "-jarpath":
-					final String jarPaths = args[i];
+					final String jarPaths = args[++i];
 					for (final String jarPath : jarPaths.split(File.pathSeparator)) {
 						final File jarDir = new File(jarPath);
 						if (!jarDir.exists()) continue;
