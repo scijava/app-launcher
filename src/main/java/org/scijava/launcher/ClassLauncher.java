@@ -65,6 +65,9 @@ public class ClassLauncher {
 	public static void main(final String... args) {
 		tryToRun(Splash::show);
 		tryToRun(Java::check);
+		String appName = appName();
+		appName = appName == null ? "" : " " + appName;
+		Splash.update("Launching" + appName + "...");
 		run(args);
 	}
 
