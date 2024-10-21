@@ -74,8 +74,7 @@ public class ArchivesTest {
 		String outputPrefix = folderName + "/";
 		List<String> expectedOutput = Arrays.asList(outputPrefix, outputPrefix + "readme.txt", outputPrefix + "data.dat");
 		List<String> output = new ArrayList<>();
-		Future<Void> task = Archives.unpack(archive, destFile, output::add);
-		task.get();
+		Archives.unpack(archive, destFile, output::add).get();
 		assertEquals(expectedOutput, output);
 
 		// Check for unpacked folder.

@@ -305,17 +305,13 @@ public class Java {
 		tmpArchive.deleteOnExit();
 
 		// Perform the download.
-		Future<Void> task = Downloader.download(new URL(javaLink), tmpArchive,
-			d -> subscriber.accept("Downloading Java...", d));
-		try {
-			task.get();
-		}
-		catch (InterruptedException | ExecutionException e) {
-			throw new IOException(e);
-		}
+		waitForTask(Downloader.download(new URL(javaLink), tmpArchive,
+			d -> subscriber.accept("Downloading Java...", d)));
 
 		// Unpack the downloaded archive.
-		Archives.unpack(tmpArchive, javaRootFile, s -> subscriber.accept(s, null));
+		String[] dir = {null};
+		waitForTask(Archives.unpack(tmpArchive, javaRootFile,
+			s -> subscriber.accept("Unpacking " + s, null)));
 
 		subscriber.accept("Java update complete", null);
 	}
@@ -390,5 +386,14 @@ public class Java {
 			message.toString(), "Upgrade Java", "Just quit", null);
 		if (choice == Dialogs.Result.YES) Java.upgrade();
 		else System.exit(1);
+	}
+
+	private static <T> T waitForTask(Future<T> task) throws IOException {
+		try {
+			return task.get();
+		}
+		catch (ExecutionException | InterruptedException e) {
+			throw new IOException(e);
+		}
 	}
 }
