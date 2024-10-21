@@ -1,10 +1,14 @@
 [![](https://img.shields.io/maven-central/v/org.scijava/app-launcher.svg)](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.scijava%22%20AND%20a%3A%22app-launcher%22)
 [![](https://github.com/scijava/app-launcher/actions/workflows/build.yml/badge.svg)](https://github.com/scijava/app-launcher/actions/workflows/build.yml)
 
-The SciJava app launcher provides an entry point into SciJava applications,
-notably [Fiji](https://fiji.sc/).
+The SciJava app-launcher provides an entry point into SciJava applications,
+notably [Fiji](https://fiji.sc/). Its design synergizes well with the
+[Jaunch](https://github.com/apposed/jaunch) native launcher, although
+Jaunch is by no means the only solution for the native executable side;
+[`jpackage`](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jpackage.html)
+or [jDeploy](https://www.jdeploy.com/) should also work for example.
 
-Its most major functions are:
+The app-launcher's most major functions are:
 
 * Ensure the version of Java being used is appropriate to app's requirements.
   In case it isn't, offer to upgrade Java by downloading a more appropriate version.
