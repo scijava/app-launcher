@@ -310,8 +310,23 @@ public class Java {
 
 		// Unpack the downloaded archive.
 		String[] dir = {null};
-		waitForTask(Archives.unpack(tmpArchive, javaRootFile,
-			s -> subscriber.accept("Unpacking " + s, null)));
+		waitForTask(Archives.unpack(tmpArchive, javaRootFile, s -> {
+			// Save a reference to the first directory being unpacked.
+			// This is only a heuristic, but it works for most Java archives.
+			if (s != null && dir[0] == null && s.endsWith("/")) dir[0] = s;
+			// Forward the message on to our upgrade subscriber.
+			subscriber.accept("Unpacking " + s, null);
+		}));
+
+		// Write new installation location into the requested configuration file.
+		if (dir[0] != null) {
+			Path newJavaPath = javaRootPath.resolve(dir[0]).normalize().toAbsolutePath();
+			String configFileValue = System.getProperty("scijava.app.config-file");
+			if (configFileValue != null && !configFileValue.isEmpty()) {
+				File configFile = new File(configFileValue);
+				Config.update(configFile, "jvm.dir", newJavaPath.toString());
+			}
+		}
 
 		subscriber.accept("Java update complete", null);
 	}
