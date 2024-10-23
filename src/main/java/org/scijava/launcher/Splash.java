@@ -145,10 +145,11 @@ public class Splash {
 	 */
 	public static void update(final String message, final double progress) {
 		Runnable updater = () -> {
-			if (progressBar == null) return;
-			if (message != null) ((JProgressBar) progressBar).setString(message);
+			JProgressBar jpBar = (JProgressBar) progressBar;
+			if (jpBar == null) return;
+			if (message != null) jpBar.setString(message);
 			if (!Double.isNaN(progress)) {
-				((JProgressBar) progressBar).setValue((int) (progress * PROGRESS_MAX));
+				jpBar.setValue((int) (progress * PROGRESS_MAX));
 			}
 		};
 		if (EventQueue.isDispatchThread()) updater.run();
