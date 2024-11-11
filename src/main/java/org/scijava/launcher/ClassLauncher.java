@@ -29,7 +29,6 @@
 
 package org.scijava.launcher;
 
-import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
@@ -41,12 +40,12 @@ import java.util.Arrays;
  * Benefits:
  * </p>
  * <ol>
- * <li>Call all Java main classes via this class, to be able to generate
- * appropriate class paths using the platform-independent convenience provided
- * by Java's class library.</li>
  * <li>Verify that the version of Java being used is appropriate
  * (e.g. new enough) for the application before attempting to launch it.</li>
  * <li>Display a splash window while the application is starting up.</li>
+ * <li>Call all Java main classes via this class, to be able to invoke
+ * the above-mentioned pre-application-startup routines without
+ * application code needing to depend on the app-launcher directly.</li>
  * </ol>
  *
  * @author Johannes Schindelin
@@ -78,30 +77,12 @@ public class ClassLauncher {
 	}
 
 	private static void run(String[] args) {
-		boolean passClasspath = false;
 		URLClassLoader classLoader = null;
 		int i = 0;
 		for (; i < args.length && args[i].charAt(0) == '-'; i++) {
 			final String option = args[i];
 			switch (option) {
-				case "-cp":
-				case "-classpath":
-					classLoader = ClassLoaderPlus.get(classLoader, new File(args[++i]));
-					break;
-				case "-jarpath":
-					final String jarPaths = args[++i];
-					for (final String jarPath : jarPaths.split(File.pathSeparator)) {
-						final File jarDir = new File(jarPath);
-						if (!jarDir.exists()) continue;
-						classLoader = ClassLoaderPlus.getRecursively(classLoader, true, jarDir);
-					}
-					break;
-				case "-pass-classpath":
-					passClasspath = true;
-					break;
-				case "-freeze-classloader":
-					ClassLoaderPlus.freeze(classLoader);
-					break;
+				// Note: No options for now, but might add some in the future.
 				default:
 					Log.error("Unknown option: " + option + "!");
 					System.exit(1);
@@ -115,10 +96,6 @@ public class ClassLauncher {
 
 		String mainClass = args[i];
 		args = slice(args, i + 1);
-
-		if (passClasspath && classLoader != null) {
-			args = prepend(args, "-classpath", ClassLoaderPlus.getClassPath(classLoader));
-		}
 
 		Log.debug("Launching main class " + mainClass + " with parameters " + Arrays.toString(args));
 
@@ -140,14 +117,6 @@ public class ClassLauncher {
 	{
 		final String[] result = new String[to - from];
 		if (result.length > 0) System.arraycopy(array, from, result, 0, result.length);
-		return result;
-	}
-
-	private static String[] prepend(final String[] array, final String... before) {
-		if (before.length == 0) return array;
-		final String[] result = new String[before.length + array.length];
-		System.arraycopy(before, 0, result, 0, before.length);
-		System.arraycopy(array, 0, result, before.length, array.length);
 		return result;
 	}
 
