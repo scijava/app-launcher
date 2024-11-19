@@ -279,7 +279,7 @@ public class Java {
 			throw new IOException("Invalid Java root directory");
 		}
 
-		subscriber.accept("Updating Java...", null);
+		subscriber.accept("Updating Java...", Double.NaN);
 
 		// Download the mapping of platforms to Java download links.
 		String javaLinks = sysProp("scijava.app.java-links");
@@ -316,7 +316,7 @@ public class Java {
 			// This is only a heuristic, but it works for most Java archives.
 			if (s != null && dir[0] == null && s.endsWith("/")) dir[0] = s;
 			// Forward the message on to our upgrade subscriber.
-			subscriber.accept("Unpacking " + s, null);
+			subscriber.accept("Unpacking " + s, Double.NaN);
 		}));
 
 		// Write new installation location into the requested configuration file.
@@ -329,7 +329,7 @@ public class Java {
 			}
 		}
 
-		subscriber.accept("Java update complete", null);
+		subscriber.accept("Java update complete", Double.NaN);
 	}
 
 	private static String sysProp(String key) {
