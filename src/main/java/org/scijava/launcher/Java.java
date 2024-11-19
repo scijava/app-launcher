@@ -300,7 +300,7 @@ public class Java {
 
 		// Create a temp file to house the downloaded Java archive.
 		String prefix = Java.class.getName() + "-";
-		Matcher m = Pattern.compile("((\\.tar)?\\.[^.]*)$").matcher(javaLink);
+		Matcher m = Pattern.compile(".*?((\\.tar)?\\.[^.]*)$").matcher(javaLink);
 		String suffix = m.matches() ? m.group(1) : null;
 		File tmpArchive = Files.createTempFile(prefix, suffix).toFile();
 		tmpArchive.deleteOnExit();
