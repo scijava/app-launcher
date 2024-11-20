@@ -84,20 +84,20 @@ public class ClassLauncher {
 			switch (option) {
 				// Note: No options for now, but might add some in the future.
 				default:
-					Log.error("Unknown option: " + option + "!");
+					error("Unknown option: " + option + "!");
 					System.exit(1);
 			}
 		}
 
 		if (i >= args.length) {
-			Log.error("Missing argument: main class");
+			error("Missing argument: main class");
 			System.exit(1);
 		}
 
 		String mainClass = args[i];
 		args = slice(args, i + 1);
 
-		Log.debug("Launching main class " + mainClass + " with parameters " + Arrays.toString(args));
+		debug("Launching main class " + mainClass + " with parameters " + Arrays.toString(args));
 
 		try {
 			launch(classLoader, mainClass, args);
@@ -120,11 +120,19 @@ public class ClassLauncher {
 		return result;
 	}
 
+	private static void debug(String message) {
+		Log.debug("[ClassLauncher] " + message);
+	}
+
+	private static void error(String message) {
+		Log.error("[ClassLauncher] " + message);
+	}
+
 	static void launch(ClassLoader classLoader,
 		final String className, final String... args)
 	{
 		Class<?> main = null;
-		Log.debug("Class loader = " + classLoader);
+		debug("Class loader = " + classLoader);
 		try {
 			main = ClassLoaders.loadClass(classLoader, className);
 		}
@@ -145,7 +153,7 @@ public class ClassLauncher {
 		}
 		catch (final NoSuchMethodException e) {
 			Log.debug(e);
-			Log.error("Class '" + className + "' does not have a main method.");
+			error("Class '" + className + "' does not have a main method.");
 			System.exit(1);
 		}
 		Integer result = 1;
@@ -154,10 +162,10 @@ public class ClassLauncher {
 		}
 		catch (final IllegalAccessException e) {
 			Log.debug(e);
-			Log.error("The main method of class '" + className + "' is not public.");
+			error("The main method of class '" + className + "' is not public.");
 		}
 		catch (final InvocationTargetException e) {
-			Log.error("Error while executing the main method of class '" + className + "':");
+			error("Error while executing the main method of class '" + className + "':");
 			Log.error(e.getTargetException());
 		}
 		if (result != null) System.exit(result);
