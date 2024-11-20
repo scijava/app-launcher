@@ -53,9 +53,23 @@ public class Splash {
 	private static Object splashWindow;
 	private static Object progressBar;
 
+	/**
+	 * Displays a splash window. If the {@code scijava.app.splash-image} property
+	 * references a valid image, it will be used as a logo.
+	 */
 	public static void show() {
-		String splashImage = System.getProperty("scijava.app.splash-image");
-		if (splashImage != null) Splash.show(splashImage);
+		show(true);
+	}
+
+	/**
+	 * Displays a splash window. If the {@code scijava.app.splash-image} property
+	 * references a path to a valid image, it will be loaded and used as the splash logo.
+	 *
+	 * @param autoclose If true, creates a dedicated daemon thread to close the splash
+	 *                   screen automatically as soon as any other windows become visible.
+	 */
+	public static void show(boolean autoclose) {
+		show(null, autoclose);
 	}
 
 	/**
@@ -64,14 +78,31 @@ public class Splash {
 	 * @param logoPath Resource path to the logo image to display.
 	 */
 	public static void show(String logoPath) {
+		show(logoPath, true);
+	}
+
+	/**
+	 * Displays a splash window with the given logo image.
+	 *
+	 * @param logoPath Resource path to the logo image to display.
+	 * @param autoclose If true, creates a dedicated daemon thread to close the splash
+	 *                   screen automatically as soon as any other windows become visible.
+	 */
+	public static void show(String logoPath, boolean autoclose) {
 		if (Boolean.getBoolean("java.awt.headless")) return;
 		LookAndFeel.init();
 
+		if (logoPath == null) logoPath = System.getProperty("scijava.app.splash-image");
+
 		final JWindow window = new JWindow();
 		splashWindow = window; // Save a non-AWT reference to the window.
-		final URL logoURL = ClassLoaders.loadResource(Splash.class, logoPath);
-		final ImageIcon imageIcon = new ImageIcon(logoURL);
-		final JLabel logoImage = new JLabel(imageIcon);
+		final JLabel logoImage;
+		if (logoPath == null) logoImage = null;
+		else {
+			final URL logoURL = ClassLoaders.loadResource(Splash.class, logoPath);
+			final ImageIcon imageIcon = new ImageIcon(logoURL);
+			logoImage = new JLabel(imageIcon);
+		}
 		final JProgressBar bar = new JProgressBar();
 		bar.setMaximum(PROGRESS_MAX);
 		progressBar = bar; // Save a non-AWT reference to the progress bar.
@@ -84,7 +115,7 @@ public class Splash {
 		final JPanel pane = new JPanel();
 		pane.setOpaque(false);
 		pane.setLayout(new BorderLayout());
-		pane.add(logoImage, BorderLayout.CENTER);
+		if (logoImage != null) pane.add(logoImage, BorderLayout.CENTER);
 		pane.add(bar, BorderLayout.SOUTH);
 		window.setContentPane(pane);
 		window.pack();
@@ -96,27 +127,7 @@ public class Splash {
 		window.setVisible(true);
 
 		// Kill the splash window when any other window shows up.
-		Thread thread = new Thread(() -> {
-			while (true) {
-				try {
-					Thread.sleep(100);
-				}
-				catch (final InterruptedException exc) {}
-				if (splashWindow == null) return;
-				final Window[] windows = Window.getWindows();
-				for (final Window win : windows) {
-					// Terminate the splash window as soon as another window is visible.
-					if (win.isVisible() && win != splashWindow) {
-						win.requestFocusInWindow();
-						hide();
-						return;
-					}
-				}
-			}
-		}, "Splash-Monitor");
-		// Don't let this thread prevent shutdown of the JVM.
-		thread.setDaemon(true);
-		thread.start();
+		if (autoclose) startSplashAutocloseThread();
 	}
 
 	/**
@@ -165,5 +176,29 @@ public class Splash {
 		((Window) splashWindow).dispose();
 		splashWindow = null;
 		progressBar = null;
+	}
+
+	private static void startSplashAutocloseThread() {
+		Thread thread = new Thread(() -> {
+			while (true) {
+				try {
+					Thread.sleep(100);
+				}
+				catch (final InterruptedException exc) {}
+				if (splashWindow == null) return;
+				final Window[] windows = Window.getWindows();
+				for (final Window win : windows) {
+					// Terminate the splash window as soon as another window is visible.
+					if (win.isVisible() && win != splashWindow) {
+						win.requestFocusInWindow();
+						hide();
+						return;
+					}
+				}
+			}
+		}, "Splash-Monitor");
+		// Don't let this thread prevent shutdown of the JVM.
+		thread.setDaemon(true);
+		thread.start();
 	}
 }

@@ -241,7 +241,7 @@ public class Java {
 	}
 
 	public static void upgrade(boolean headless) {
-		if (!headless) Splash.show();
+		if (!headless) Splash.show(false);
 		try {
 			if (headless) {
 				String[] message = {""};
