@@ -104,7 +104,7 @@ public class Java {
 					"It appears there is a good-enough version of Java already installed at " + good +
 					", which is " + (isBelowMinimum() ? "strongly" : "") + "recommended to use instead.";
 				String message =
-					warnAboutOldJavaVersion +
+					warnAboutOldJavaVersion + "<br>" +
 					informAboutExistingGoodVersion +
 					(isBelowMinimum() ? appMightCrash : "") +
 					questionPrompt;
