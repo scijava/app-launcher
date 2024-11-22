@@ -90,6 +90,9 @@ public final class Archives {
 					}
 				}
 			}
+			finally {
+				executor.shutdown();
+			}
 			return null;
 		});
 	}
