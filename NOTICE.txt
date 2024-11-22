@@ -1,5 +1,5 @@
 Parts of this code are derived from the ImageJ Launcher (which
-(itself was derived from its prior incarnation, the Fiji Launcher):
+itself was derived from its prior incarnation, the Fiji Launcher):
 
 https://github.com/imagej/imagej-launcher
 
