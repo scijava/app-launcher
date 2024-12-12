@@ -338,7 +338,7 @@ public class Java {
 						Log.debug(exc);
 					}
 				}
-				Config.update(configFile, "jvm.dir", newJavaPath.toString());
+				Config.update(configFile, "jvm-dir", newJavaPath.toString());
 			}
 		}
 
