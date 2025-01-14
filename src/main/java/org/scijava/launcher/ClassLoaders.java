@@ -2,7 +2,7 @@
  * #%L
  * Launcher for SciJava applications.
  * %%
- * Copyright (C) 2007 - 2024 SciJava developers.
+ * Copyright (C) 2007 - 2025 SciJava developers.
  * %%
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
