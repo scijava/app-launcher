@@ -85,9 +85,18 @@
 		<license.licenseName>bsd_2</license.licenseName>
 		<license.copyrightOwners>SciJava developers.</license.copyrightOwners>
 		<license.projectName>Launcher for SciJava applications.</license.projectName>
+
+		<mslinks.version>1.0.6.2</mslinks.version>
 	</properties>
 
 	<dependencies>
+		<!-- mslinks - https://github.com/DmitriiShamrikov/mslinks -->
+		<dependency>
+			<groupId>com.github.vatbub</groupId>
+			<artifactId>mslinks</artifactId>
+			<version>${mslinks.version}</version>
+			<optional>true</optional>
+		</dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
 			<artifactId>junit-jupiter-api</artifactId>
