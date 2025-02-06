@@ -31,9 +31,12 @@ package org.scijava.launcher;
 
 import javax.swing.Icon;
 import javax.swing.JOptionPane;
-import java.awt.Component;
+import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Utility class offering dialog-box-related methods.
@@ -64,14 +67,24 @@ public final class Dialogs {
 				"At least one of yes, no, or never must be non-null");
 		}
 		Object initial = no == null ? options[0] : no;
-		int rval = JOptionPane.showOptionDialog(parent, message,
-			title, optionType, messageType, icon, options, initial);
-		switch (rval) {
+		CompletableFuture<Integer> future = new CompletableFuture<>();
+		EventQueue.invokeLater(() -> {
+			int result =JOptionPane.showOptionDialog(parent, message, title, optionType, messageType, icon, options, initial);
+			future.complete(result);
+		});
+		int choice = 0; // Blocks until dialog completes
+		try {
+			choice = future.get();
+		}
+		catch (InterruptedException | ExecutionException e) {
+			choice = -1;
+		}
+		switch (choice) {
 			case 0: return Result.YES;
 			case 1: return Result.NO;
 			case 2: return Result.NEVER;
 			case -1: return Result.CANCELED;
-			default: throw new RuntimeException("Unexpected value: " + rval);
+			default: throw new RuntimeException("Unexpected value: " + choice);
 		}
 	}
 
