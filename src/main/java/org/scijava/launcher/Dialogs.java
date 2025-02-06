@@ -29,10 +29,11 @@
 
 package org.scijava.launcher;
 
-import javax.swing.Icon;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -67,9 +68,21 @@ public final class Dialogs {
 				"At least one of yes, no, or never must be non-null");
 		}
 		Object initial = no == null ? options[0] : no;
+
 		CompletableFuture<Integer> future = new CompletableFuture<>();
-		EventQueue.invokeLater(() -> {
-			int result =JOptionPane.showOptionDialog(parent, message, title, optionType, messageType, icon, options, initial);
+		SwingUtilities.invokeLater(() -> {
+			Component parentComp = parent;
+			boolean disposeParent = false;
+			if (parentComp == null) {
+				parentComp = new JFrame();
+				((JFrame)parentComp).setAlwaysOnTop(true);
+				((JFrame)parentComp).setLocationRelativeTo(null); // Ensure it's centered
+				disposeParent = true;
+			}
+			int result = JOptionPane.showOptionDialog(parentComp, message, title, optionType, messageType, icon, options, initial);
+			if (disposeParent) {
+				((JFrame) parentComp).dispose();
+			}
 			future.complete(result);
 		});
 		int choice = 0; // Blocks until dialog completes
