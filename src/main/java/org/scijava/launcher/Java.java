@@ -195,7 +195,7 @@ public class Java {
 	/**
 	 * Gets the folder beneath which "managed" Java installations should be located.
 	 * This folder is indicated by the {@code scijava.app.java-root} system property.
-	 * If the property is unset or empty, or points to an nonexistent directory,
+	 * If the property is unset or empty, or points to a nonexistent directory,
 	 * this method returns {@code null}.
 	 */
 	public static Path root() { return root(false); }
@@ -204,7 +204,7 @@ public class Java {
 	 * Gets the folder beneath which "managed" Java installations should be located.
 	 * This folder is indicated by the {@code scijava.app.java-root} system property.
 	 * If the property is unset or empty, this method returns {@code null}. If it
-	 * points to an nonexistent directory, this method either returns {@code null}
+	 * points to a nonexistent directory, this method either returns {@code null}
 	 * or creates the directory depending on the value of the {@code create} flag.
 	 *
 	 * @param create If true, and the directory does not exist, it is created.
@@ -223,7 +223,7 @@ public class Java {
 	 * Gets whether the running JVM is considered "managed" with the application.
 	 * A managed JVM is one residing on the filesystem beneath the folder indicated by the
 	 * {@code scijava.app.java-root} system property. (If the property is not set, or
-	 * points to an nonexistent directory, the running JVM is never considered managed.)
+	 * points to a nonexistent directory, the running JVM is never considered managed.)
 	 */
 	public static boolean isManaged() {
 		Path javaHome = home();
