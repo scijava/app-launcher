@@ -58,7 +58,6 @@ public class ClassLauncher {
 	public static String appName(String fallback) {
 		String appName = System.getProperty("scijava.app.name");
 		return appName == null ? fallback : appName;
-
 	}
 
 	public static void main(final String... args) {
