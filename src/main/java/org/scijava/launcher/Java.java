@@ -82,12 +82,37 @@ public class Java {
 			"<br>If you continue the launch with this version of Java, " +
 			appName + " might crash.";
 
+		// FIXME
+		// 1. Check if there's a good-enough local installation.
+		//     If so, offer to switch to that.
+		//          If not already using a bundled install, indicate that this will be a change
+		// 2. If no valid local install, see if we have valid Java links
+		//     If so, offer to upgrade
+		//          If not already using a bundled install, indicate that this will be a change
+		// 3. If we also have no valid remote java, offer potential failure warning
+		//     If managed or bundled, suggest that this may be in error
+		//     If not bundled, suggest that they manually upgrade their Java
+
+		Path good = goodInstallation();
+		if (good != null) {
+			String informAboutExistingGoodVersion =
+					"It appears there is a good-enough version of Java already installed at " + good +
+							", which is " + (isBelowMinimum() ? "strongly" : "") + "recommended to use instead.";
+			String message =
+					warnAboutOldJavaVersion + "<br>" +
+							informAboutExistingGoodVersion +
+							(isBelowMinimum() ? appMightCrash : "") +
+							questionPrompt;
+			boolean doQuit = askIfAllowed("skipVersionWarning",
+					message, "Quit", "Launch anyway", "Launch and never warn again");
+
+		} else {
+
+		}
+
 		if (isManaged()) {
 			// Running Java version is managed by us; warn the user, and maybe offer to upgrade.
 			Path good = goodInstallation();
-			// CTR START HERE: If we cannot upgrade due to missing javaLinks or javaPlatform values,
-			// We should fall back to the "unmanaged" warning behavior. How to restructure these logic branches
-			// to do that as elegantly as possible?
 			if (good == null) {
 				// No existing good-enough installation; offer to download and install one.
 				String message =
