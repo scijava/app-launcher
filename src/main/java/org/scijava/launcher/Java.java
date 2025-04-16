@@ -331,9 +331,8 @@ public class Java {
 			String configFileValue = System.getProperty("scijava.app.config-file");
 			if (configFileValue != null && !configFileValue.isEmpty()) {
 				File configFile = new File(configFileValue);
-				String appDirValue = System.getProperty("scijava.app.directory");
-				if (appDirValue != null) {
-					Path appDirPath = Paths.get(appDirValue).normalize().toAbsolutePath();
+				Path appDirPath = ClassLauncher.appDir();
+				if (appDirPath != null) {
 					// If possible, use a path relative to the application directory.
 					// This improves portability if the application gets moved
 					// elsewhere, and/or accessed from multiple operating systems.
