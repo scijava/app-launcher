@@ -234,8 +234,18 @@ public class Java {
 	public static boolean isManaged() {
 		Path javaHome = home();
 		Path javaRoot = root();
-		if (javaHome == null || javaRoot == null) return false;
-		return javaHome.normalize().startsWith(javaRoot.normalize());
+		return isNested(javaHome, javaRoot);
+	}
+
+	/**
+	 * Gets whether the running JVM is considered "bundled" with the application.
+	 * A bundled JVM is one residing on the filesystem beneath the folder indicated
+	 * by the {@code app-dir} system property.
+	 */
+	public static boolean isBundled() {
+		Path javaHome = home();
+		Path appDir = ClassLauncher.appDir();
+		return isNested(javaHome, appDir);
 	}
 
 	public static boolean isHeadless() {
@@ -348,6 +358,15 @@ public class Java {
 		}
 
 		subscriber.accept("Java update complete", Double.NaN);
+	}
+
+	/**
+	 * @return true if {@code test} and {@code root} are non-null and {@code test}
+	 * is a subdirectory of {@code root}
+	 */
+	private static boolean isNested(Path test, Path root) {
+		if (root == null || test == null) return false;
+		return test.normalize().startsWith(root);
 	}
 
 	private static String sysProp(String key) {
