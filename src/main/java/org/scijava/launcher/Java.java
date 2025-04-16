@@ -185,6 +185,12 @@ public class Java {
 		}
 	}
 
+	/**
+	 * Gets the folder indicated by the {@code java.home} property, presumably the
+	 * Java installation used to launch this application. If the property is unset
+	 * or empty, or points to a nonexistent directory, this method returns
+	 * {@code null}.
+	 */
 	public static Path home() {
 		String javaHomeValue = System.getProperty("java.home");
 		if (javaHomeValue == null) return null;
