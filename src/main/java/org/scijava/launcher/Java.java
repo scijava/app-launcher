@@ -297,20 +297,12 @@ public class Java {
 
 		subscriber.accept("Updating Java...", Double.NaN);
 
-		// Download the mapping of platforms to Java download links.
-		String javaLinks = sysProp("scijava.app.java-links");
-		List<String> lines = Downloader.downloadText(new URL(javaLinks));
 
-		// Extract the relevant Java download link from the mapping.
-		String javaPlatform = sysProp("scijava.app.java-platform");
-		String javaLink = lines.stream()
-			.filter(line -> line.startsWith(javaPlatform + "="))
-			.map(line -> line.substring(javaPlatform.length() + 1))
-			.findFirst().orElse(null);
-
-		// If no mapping found, fail.
+		// If no valid link found, fail.
+		final String javaLink = getJavaLink();
 		if (javaLink == null) {
-			Log.error("No Java download available for platform: " + javaPlatform);
+			Log.error("No Java download available for platform: " +
+					sysProp("scijava.app.java-platform"));
 			return;
 		}
 
@@ -358,6 +350,24 @@ public class Java {
 		}
 
 		subscriber.accept("Java update complete", Double.NaN);
+	}
+
+	/**
+	 * Helper method to fetch the latest Java URLs for each platform and return
+	 * the best option for the current platform. Returns {@code null} if no valid
+	 * link was found.
+	 */
+	private static String getJavaLink() throws IOException {
+		// Download the mapping of platforms to Java download links.
+		String javaLinks = sysProp("scijava.app.java-links");
+		List<String> lines = Downloader.downloadText(new URL(javaLinks));
+
+		// Extract the relevant Java download link from the mapping.
+		String javaPlatform = sysProp("scijava.app.java-platform");
+		return lines.stream()
+				.filter(line -> line.startsWith(javaPlatform + "="))
+				.map(line -> line.substring(javaPlatform.length() + 1))
+				.findFirst().orElse(null);
 	}
 
 	/**
