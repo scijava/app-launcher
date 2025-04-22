@@ -405,6 +405,12 @@ public class Java {
 		}
 	}
 
+	/**
+	 * Helper method that prompts using the given message if the given preference
+	 * is unset. Sets the preference is the "never" option is selected. Returns
+	 * false if "no" or "never" are selected, or the preference key was previously
+	 * set.
+	 */
 	private static boolean askIfAllowed(String prefKey,
 		String message, String yes, String no, String never)
 	{
