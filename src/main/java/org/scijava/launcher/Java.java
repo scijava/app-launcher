@@ -82,46 +82,60 @@ public class Java {
 			"<br>If you continue the launch with this version of Java, " +
 			appName + " might crash.";
 
-		if (isManaged()) {
-			// Running Java version is managed by us; warn the user, and maybe offer to upgrade.
-			Path good = goodInstallation();
-			// CTR START HERE: If we cannot upgrade due to missing javaLinks or javaPlatform values,
-			// We should fall back to the "unmanaged" warning behavior. How to restructure these logic branches
-			// to do that as elegantly as possible?
-			if (good == null) {
-				// No existing good-enough installation; offer to download and install one.
-				String message =
-					warnAboutOldJavaVersion +
-					(isBelowMinimum() ? appMightNotWorkProperly : "") +
-					questionPrompt;
-				boolean doUpgrade = askIfAllowed("skipUpgradePrompt",
-					message, "Upgrade", "Not now", "Never ask again");
-				if (doUpgrade) Java.upgrade();
-			}
-			else {
-				// Point out the good-enough installation that is already present.
-				String informAboutExistingGoodVersion =
-					"It appears there is a good-enough version of Java already installed at " + good +
-					", which is " + (isBelowMinimum() ? "strongly" : "") + "recommended to use instead.";
-				String message =
-					warnAboutOldJavaVersion + "<br>" +
-					informAboutExistingGoodVersion +
-					(isBelowMinimum() ? appMightCrash : "") +
-					questionPrompt;
-				boolean doQuit = askIfAllowed("skipVersionWarning",
-					message, "Quit", "Launch anyway", "Launch and never warn again");
-				if (doQuit) System.exit(1);
-			}
-		}
-		else {
-			// Running Java version is not managed by us; just issue a warning.
+		warnAboutOldJavaVersion +=
+				(isBelowMinimum() ? appMightCrash : appMightNotWorkProperly);
+
+		// If the Java being used does not match scijava.app.java-root and is not
+		// located in a subdirectory of the app, then we assume it is under the
+		// user's explicit control. Offer to convert to managed installation.
+		if (!isManaged() && !isBundled()) {
 			String message =
-				warnAboutOldJavaVersion +
-				(isBelowMinimum() ? appMightCrash : "") +
-				questionPrompt;
-			boolean doQuit = askIfAllowed("skipVersionWarning",
-				message, "Quit", "Launch anyway", "Launch and never warn again");
-			if (doQuit) System.exit(1);
+					warnAboutOldJavaVersion + "<br>" +
+					"It looks like you have manually configured your Java installation.<br>" +
+					"You can convert to automated Java upgrades, or launch as normal.<br>" +
+					questionPrompt;
+
+			if (!askIfAllowed("skipVersionWarning", message, "Convert",
+					"Launch anyway", "Launch and never warn again")) return;
+		}
+
+		// Check if there's a good-enough local installation
+		Path good = goodInstallation();
+		if (good != null) {
+			// If this is a managed installation at this point we know the user
+			// wants to convert, otherwise we ask if they want to use the bundled JVM
+			if (!isManaged()) {
+				String message = warnAboutOldJavaVersion + "<br>" +
+						"It appears there is a good-enough version of Java already installed at " + good +
+								"<br>" + "Would you like to use it?";
+				if (!askIfAllowed("skipUpgradePrompt", message, "Use it",
+						"No, launch anyway", "No and never ask again")) return;
+			}
+			// Set the jvm-dir to the good-enough installation.
+			updateJavaPath(good);
+		} else {
+			// No existing good-enough installation; offer to download and install one.
+			final String javaLink = getJavaLink();
+			if (javaLink == null) {
+				// Inform the user that no Java download is available for this platform.
+				String message = warnAboutOldJavaVersion +
+					"<br>Unfortunately we couldn't find a Java download for your platform." +
+					"<br>URL checked: " + sysProp("scijava.app.java-links") +
+					"<br>Platform detected: " + sysProp("scijava.app.java-platform") +
+					"<br>Please report this failure on forum.image.sc.";
+				Dialogs.ask(null, message, "OK", null, null);
+				return;
+			}
+			// If this is a managed installation at this point we know the user
+			// wants to upgrade, otherwise we ask if they want to download a new JVM
+			if (!isManaged()) {
+				String message =
+						warnAboutOldJavaVersion + "<br>" + "Would you like to " +
+						"download and install a new version of Java?";
+				if (!askIfAllowed("skipUpgradePrompt", message, "Upgrade",
+					"No, launch anyway", "No and never ask again")) return;
+			}
+			Java.upgrade();
 		}
 	}
 
