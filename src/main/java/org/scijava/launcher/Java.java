@@ -330,26 +330,30 @@ public class Java {
 		// Write new installation location into the requested configuration file.
 		if (dir[0] != null) {
 			Path newJavaPath = javaRootPath.resolve(dir[0]).normalize().toAbsolutePath();
-			String configFileValue = System.getProperty("scijava.app.config-file");
-			if (configFileValue != null && !configFileValue.isEmpty()) {
-				File configFile = new File(configFileValue);
-				Path appDirPath = ClassLauncher.appDir();
-				if (appDirPath != null) {
-					// If possible, use a path relative to the application directory.
-					// This improves portability if the application gets moved
-					// elsewhere, and/or accessed from multiple operating systems.
-					try {
-						newJavaPath = appDirPath.relativize(newJavaPath);
-					}
-					catch (IllegalArgumentException exc) {
-						Log.debug(exc);
-					}
-				}
-				Config.update(configFile, "jvm-dir", newJavaPath.toString());
-			}
+			updateJavaPath(newJavaPath);
 		}
 
 		subscriber.accept("Java update complete", Double.NaN);
+	}
+
+	private static void updateJavaPath(Path newJavaPath) throws IOException {
+		String configFileValue = System.getProperty("scijava.app.config-file");
+		if (configFileValue != null && !configFileValue.isEmpty()) {
+			File configFile = new File(configFileValue);
+			Path appDirPath = ClassLauncher.appDir();
+			if (appDirPath != null) {
+				// If possible, use a path relative to the application directory.
+				// This improves portability if the application gets moved
+				// elsewhere, and/or accessed from multiple operating systems.
+				try {
+					newJavaPath = appDirPath.relativize(newJavaPath);
+				}
+				catch (IllegalArgumentException exc) {
+					Log.debug(exc);
+				}
+			}
+			Config.update(configFile, "jvm-dir", newJavaPath.toString());
+		}
 	}
 
 	/**
