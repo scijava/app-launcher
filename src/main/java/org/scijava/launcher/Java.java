@@ -82,46 +82,64 @@ public class Java {
 			"<br>If you continue the launch with this version of Java, " +
 			appName + " might crash.";
 
-		if (isManaged()) {
-			// Running Java version is managed by us; warn the user, and maybe offer to upgrade.
-			Path good = goodInstallation();
-			// CTR START HERE: If we cannot upgrade due to missing javaLinks or javaPlatform values,
-			// We should fall back to the "unmanaged" warning behavior. How to restructure these logic branches
-			// to do that as elegantly as possible?
-			if (good == null) {
-				// No existing good-enough installation; offer to download and install one.
-				String message =
-					warnAboutOldJavaVersion +
-					(isBelowMinimum() ? appMightNotWorkProperly : "") +
-					questionPrompt;
-				boolean doUpgrade = askIfAllowed("skipUpgradePrompt",
-					message, "Upgrade", "Not now", "Never ask again");
-				if (doUpgrade) Java.upgrade();
-			}
-			else {
-				// Point out the good-enough installation that is already present.
-				String informAboutExistingGoodVersion =
-					"It appears there is a good-enough version of Java already installed at " + good +
-					", which is " + (isBelowMinimum() ? "strongly" : "") + "recommended to use instead.";
-				String message =
-					warnAboutOldJavaVersion + "<br>" +
-					informAboutExistingGoodVersion +
-					(isBelowMinimum() ? appMightCrash : "") +
-					questionPrompt;
-				boolean doQuit = askIfAllowed("skipVersionWarning",
-					message, "Quit", "Launch anyway", "Launch and never warn again");
-				if (doQuit) System.exit(1);
-			}
-		}
-		else {
-			// Running Java version is not managed by us; just issue a warning.
+		warnAboutOldJavaVersion +=
+				(isBelowMinimum() ? appMightCrash : appMightNotWorkProperly);
+
+		// If the Java being used does not match scijava.app.java-root and is not
+		// located in a subdirectory of the app, then we assume it is under the
+		// user's explicit control. Offer to convert to managed installation.
+		boolean warned = false;
+		if (!isManaged() && !isBundled()) {
 			String message =
-				warnAboutOldJavaVersion +
-				(isBelowMinimum() ? appMightCrash : "") +
-				questionPrompt;
-			boolean doQuit = askIfAllowed("skipVersionWarning",
-				message, "Quit", "Launch anyway", "Launch and never warn again");
-			if (doQuit) System.exit(1);
+					warnAboutOldJavaVersion + "<br>" +
+					"It looks like you have manually configured your Java installation.<br>" +
+					"You can convert to automated Java upgrades, or launch as normal.<br>" +
+					questionPrompt;
+
+			if (!askIfAllowed("skipVersionWarning", message, "Convert",
+					"Launch anyway", "Launch and never warn again")) return;
+			warned = true;
+		}
+
+		// Check if there's a good-enough local installation
+		Path good = goodInstallation();
+		if (good != null) {
+			// If this is a managed installation at this point we know the user
+			// wants to convert, otherwise we ask if they want to use the bundled JVM
+			if (!warned) {
+				String message = warnAboutOldJavaVersion + "<br>" +
+						"It appears there is a good-enough version of Java already installed at " + good +
+								"<br>" + "Would you like to use it?";
+				if (!askIfAllowed("skipUpgradePrompt", message, "Use it",
+						"No, launch anyway", "No and never ask again")) return;
+			}
+			// Set the jvm-dir to the good-enough installation.
+			updateJavaPath(good);
+			notifyAndShutdown("<html>" + ClassLauncher.appName() + " has been successfully updated to use the newer Java.<br>" +
+					"Please restart " + ClassLauncher.appName() + " to apply the changes.");
+		} else {
+			// No existing good-enough installation; offer to download and install one.
+			final String javaLink = getJavaLink();
+			if (javaLink == null) {
+				// Inform the user that no Java download is available for this platform.
+				String message = warnAboutOldJavaVersion +
+					"<br>Unfortunately we couldn't find a Java download for your platform." +
+					"<br>URL checked: " + sysProp("scijava.app.java-links") +
+					"<br>Platform detected: " + sysProp("scijava.app.java-platform") +
+					"<br>Please report this failure on forum.image.sc.";
+				Dialogs.ask(null, message, "OK", null, null);
+				return;
+			}
+			// If this is a managed installation at this point we know the user
+			// wants to upgrade, otherwise we ask if they want to download a new JVM
+			if (!warned) {
+				String message =
+						warnAboutOldJavaVersion + "<br>" + "Would you like to " +
+						"download and install a new version of Java?";
+				if (!askIfAllowed("skipUpgradePrompt", message, "Upgrade",
+					"No, launch anyway", "No and never ask again")) return;
+			}
+			Java.upgrade();
 		}
 	}
 
@@ -185,6 +203,12 @@ public class Java {
 		}
 	}
 
+	/**
+	 * Gets the folder indicated by the {@code java.home} property, presumably the
+	 * Java installation used to launch this application. If the property is unset
+	 * or empty, or points to a nonexistent directory, this method returns
+	 * {@code null}.
+	 */
 	public static Path home() {
 		String javaHomeValue = System.getProperty("java.home");
 		if (javaHomeValue == null) return null;
@@ -195,7 +219,7 @@ public class Java {
 	/**
 	 * Gets the folder beneath which "managed" Java installations should be located.
 	 * This folder is indicated by the {@code scijava.app.java-root} system property.
-	 * If the property is unset or empty, or points to an nonexistent directory,
+	 * If the property is unset or empty, or points to a nonexistent directory,
 	 * this method returns {@code null}.
 	 */
 	public static Path root() { return root(false); }
@@ -204,7 +228,7 @@ public class Java {
 	 * Gets the folder beneath which "managed" Java installations should be located.
 	 * This folder is indicated by the {@code scijava.app.java-root} system property.
 	 * If the property is unset or empty, this method returns {@code null}. If it
-	 * points to an nonexistent directory, this method either returns {@code null}
+	 * points to a nonexistent directory, this method either returns {@code null}
 	 * or creates the directory depending on the value of the {@code create} flag.
 	 *
 	 * @param create If true, and the directory does not exist, it is created.
@@ -223,13 +247,23 @@ public class Java {
 	 * Gets whether the running JVM is considered "managed" with the application.
 	 * A managed JVM is one residing on the filesystem beneath the folder indicated by the
 	 * {@code scijava.app.java-root} system property. (If the property is not set, or
-	 * points to an nonexistent directory, the running JVM is never considered managed.)
+	 * points to a nonexistent directory, the running JVM is never considered managed.)
 	 */
 	public static boolean isManaged() {
 		Path javaHome = home();
 		Path javaRoot = root();
-		if (javaHome == null || javaRoot == null) return false;
-		return javaHome.normalize().startsWith(javaRoot.normalize());
+		return isNested(javaHome, javaRoot);
+	}
+
+	/**
+	 * Gets whether the running JVM is considered "bundled" with the application.
+	 * A bundled JVM is one residing on the filesystem beneath the folder indicated
+	 * by the {@code app-dir} system property.
+	 */
+	public static boolean isBundled() {
+		Path javaHome = home();
+		Path appDir = ClassLauncher.appDir();
+		return isNested(javaHome, appDir);
 	}
 
 	public static boolean isHeadless() {
@@ -242,6 +276,8 @@ public class Java {
 
 	public static void upgrade(boolean headless) {
 		if (!headless) Splash.show(false);
+		String upgradeComplete = "<html>Java has been updated successfully.<br>" +
+				"Please restart " + ClassLauncher.appName() + " to apply the changes.";
 		try {
 			if (headless) {
 				String[] message = {""};
@@ -258,8 +294,12 @@ public class Java {
 						System.out.println(message[0] = latest);
 					}
 				});
+				upgradeComplete = "Java has been updated successfully.\n" +
+						"Please restart " + ClassLauncher.appName() + " to apply the changes.";
 			}
-			else upgrade(Splash::update);
+			else {
+				upgrade(Splash::update);
+			}
 		}
 		catch (IOException e) {
 			Log.error(e);
@@ -267,6 +307,7 @@ public class Java {
 		finally {
 			if (!headless) Splash.hide();
 		}
+		notifyAndShutdown(upgradeComplete, headless);
 	}
 
 	public static void upgrade(BiConsumer<String, Double> subscriber)
@@ -281,20 +322,12 @@ public class Java {
 
 		subscriber.accept("Updating Java...", Double.NaN);
 
-		// Download the mapping of platforms to Java download links.
-		String javaLinks = sysProp("scijava.app.java-links");
-		List<String> lines = Downloader.downloadText(new URL(javaLinks));
 
-		// Extract the relevant Java download link from the mapping.
-		String javaPlatform = sysProp("scijava.app.java-platform");
-		String javaLink = lines.stream()
-			.filter(line -> line.startsWith(javaPlatform + "="))
-			.map(line -> line.substring(javaPlatform.length() + 1))
-			.findFirst().orElse(null);
-
-		// If no mapping found, fail.
+		// If no valid link found, fail.
+		final String javaLink = getJavaLink();
 		if (javaLink == null) {
-			Log.error("No Java download available for platform: " + javaPlatform);
+			Log.error("No Java download available for platform: " +
+					sysProp("scijava.app.java-platform"));
 			return;
 		}
 
@@ -322,27 +355,70 @@ public class Java {
 		// Write new installation location into the requested configuration file.
 		if (dir[0] != null) {
 			Path newJavaPath = javaRootPath.resolve(dir[0]).normalize().toAbsolutePath();
-			String configFileValue = System.getProperty("scijava.app.config-file");
-			if (configFileValue != null && !configFileValue.isEmpty()) {
-				File configFile = new File(configFileValue);
-				String appDirValue = System.getProperty("scijava.app.directory");
-				if (appDirValue != null) {
-					Path appDirPath = Paths.get(appDirValue).normalize().toAbsolutePath();
-					// If possible, use a path relative to the application directory.
-					// This improves portability if the application gets moved
-					// elsewhere, and/or accessed from multiple operating systems.
-					try {
-						newJavaPath = appDirPath.relativize(newJavaPath);
-					}
-					catch (IllegalArgumentException exc) {
-						Log.debug(exc);
-					}
-				}
-				Config.update(configFile, "jvm-dir", newJavaPath.toString());
-			}
+			updateJavaPath(newJavaPath);
 		}
 
 		subscriber.accept("Java update complete", Double.NaN);
+	}
+
+	private static void updateJavaPath(Path newJavaPath) throws IOException {
+		String configFileValue = System.getProperty("scijava.app.config-file");
+		if (configFileValue != null && !configFileValue.isEmpty()) {
+			File configFile = new File(configFileValue);
+			Path appDirPath = ClassLauncher.appDir();
+			if (appDirPath != null) {
+				// If possible, use a path relative to the application directory.
+				// This improves portability if the application gets moved
+				// elsewhere, and/or accessed from multiple operating systems.
+				try {
+					newJavaPath = appDirPath.relativize(newJavaPath);
+				}
+				catch (IllegalArgumentException exc) {
+					Log.debug(exc);
+				}
+			}
+			Config.update(configFile, "jvm-dir", newJavaPath.toString());
+		}
+	}
+
+	/**
+	 * Helper method to fetch the latest Java URLs for each platform and return
+	 * the best option for the current platform. Returns {@code null} if no valid
+	 * link was found.
+	 */
+	private static String getJavaLink() throws IOException {
+		// Download the mapping of platforms to Java download links.
+		String javaLinks = sysProp("scijava.app.java-links");
+		List<String> lines = Downloader.downloadText(new URL(javaLinks));
+
+		// Extract the relevant Java download link from the mapping.
+		String javaPlatform = sysProp("scijava.app.java-platform");
+		return lines.stream()
+				.filter(line -> line.startsWith(javaPlatform + "="))
+				.map(line -> line.substring(javaPlatform.length() + 1))
+				.findFirst().orElse(null);
+	}
+
+	/**
+	 * @return true if {@code test} and {@code root} are non-null and {@code test}
+	 * is a subdirectory of {@code root}
+	 */
+	private static boolean isNested(Path test, Path root) {
+		if (root == null || test == null) return false;
+		return test.normalize().startsWith(root);
+	}
+
+	private static void notifyAndShutdown(String message) {
+		notifyAndShutdown(message, false);
+	}
+
+	private static void notifyAndShutdown(String message, boolean headless) {
+		if (headless) {
+			System.out.println(message);
+		} else {
+			Dialogs.ask(null, message, "OK", null, null);
+		}
+		System.exit(0);
 	}
 
 	private static String sysProp(String key) {
@@ -371,6 +447,12 @@ public class Java {
 		}
 	}
 
+	/**
+	 * Helper method that prompts using the given message if the given preference
+	 * is unset. Sets the preference is the "never" option is selected. Returns
+	 * false if "no" or "never" are selected, or the preference key was previously
+	 * set.
+	 */
 	private static boolean askIfAllowed(String prefKey,
 		String message, String yes, String no, String never)
 	{

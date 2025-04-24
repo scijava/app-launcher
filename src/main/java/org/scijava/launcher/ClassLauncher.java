@@ -32,6 +32,8 @@ package org.scijava.launcher;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URLClassLoader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 
 /**
@@ -58,7 +60,20 @@ public class ClassLauncher {
 	public static String appName(String fallback) {
 		String appName = System.getProperty("scijava.app.name");
 		return appName == null ? fallback : appName;
+	}
 
+	/**
+	 * Gets the folder indicated by the {@code scijava.app.directory} property. If
+	 * the property is unset or empty, or points to a nonexistent directory, this
+	 * method returns {@code null}.
+	 */
+	public static Path appDir() {
+		String appDirValue = System.getProperty("scijava.app.directory");
+		if (appDirValue != null) {
+			Path appDirPath = Paths.get(appDirValue).normalize().toAbsolutePath();
+			if (appDirPath.toFile().exists()) return appDirPath;
+		}
+		return null;
 	}
 
 	public static void main(final String... args) {
