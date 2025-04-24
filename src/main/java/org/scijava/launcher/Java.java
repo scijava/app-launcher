@@ -88,6 +88,7 @@ public class Java {
 		// If the Java being used does not match scijava.app.java-root and is not
 		// located in a subdirectory of the app, then we assume it is under the
 		// user's explicit control. Offer to convert to managed installation.
+		boolean warned = false;
 		if (!isManaged() && !isBundled()) {
 			String message =
 					warnAboutOldJavaVersion + "<br>" +
@@ -97,6 +98,7 @@ public class Java {
 
 			if (!askIfAllowed("skipVersionWarning", message, "Convert",
 					"Launch anyway", "Launch and never warn again")) return;
+			warned = true;
 		}
 
 		// Check if there's a good-enough local installation
@@ -104,7 +106,7 @@ public class Java {
 		if (good != null) {
 			// If this is a managed installation at this point we know the user
 			// wants to convert, otherwise we ask if they want to use the bundled JVM
-			if (!isManaged()) {
+			if (!warned) {
 				String message = warnAboutOldJavaVersion + "<br>" +
 						"It appears there is a good-enough version of Java already installed at " + good +
 								"<br>" + "Would you like to use it?";
@@ -128,7 +130,7 @@ public class Java {
 			}
 			// If this is a managed installation at this point we know the user
 			// wants to upgrade, otherwise we ask if they want to download a new JVM
-			if (!isManaged()) {
+			if (!warned) {
 				String message =
 						warnAboutOldJavaVersion + "<br>" + "Would you like to " +
 						"download and install a new version of Java?";
