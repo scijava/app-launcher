@@ -115,6 +115,8 @@ public class Java {
 			}
 			// Set the jvm-dir to the good-enough installation.
 			updateJavaPath(good);
+			notifyAndShutdown("<html>" + ClassLauncher.appName() + " has been successfully updated to use the newer Java.<br>" +
+					"Please restart " + ClassLauncher.appName() + " to apply the changes.");
 		} else {
 			// No existing good-enough installation; offer to download and install one.
 			final String javaLink = getJavaLink();
@@ -274,6 +276,8 @@ public class Java {
 
 	public static void upgrade(boolean headless) {
 		if (!headless) Splash.show(false);
+		String upgradeComplete = "<html>Java has been updated successfully.<br>" +
+				"Please restart " + ClassLauncher.appName() + " to apply the changes.";
 		try {
 			if (headless) {
 				String[] message = {""};
@@ -290,8 +294,12 @@ public class Java {
 						System.out.println(message[0] = latest);
 					}
 				});
+				upgradeComplete = "Java has been updated successfully.\n" +
+						"Please restart " + ClassLauncher.appName() + " to apply the changes.";
 			}
-			else upgrade(Splash::update);
+			else {
+				upgrade(Splash::update);
+			}
 		}
 		catch (IOException e) {
 			Log.error(e);
@@ -299,6 +307,7 @@ public class Java {
 		finally {
 			if (!headless) Splash.hide();
 		}
+		notifyAndShutdown(upgradeComplete, headless);
 	}
 
 	public static void upgrade(BiConsumer<String, Double> subscriber)
@@ -397,6 +406,19 @@ public class Java {
 	private static boolean isNested(Path test, Path root) {
 		if (root == null || test == null) return false;
 		return test.normalize().startsWith(root);
+	}
+
+	private static void notifyAndShutdown(String message) {
+		notifyAndShutdown(message, false);
+	}
+
+	private static void notifyAndShutdown(String message, boolean headless) {
+		if (headless) {
+			System.out.println(message);
+		} else {
+			Dialogs.ask(null, message, "OK", null, null);
+		}
+		System.exit(0);
 	}
 
 	private static String sysProp(String key) {
