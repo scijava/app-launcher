@@ -275,6 +275,10 @@ public class Java {
 	}
 
 	public static void upgrade(boolean headless) {
+		upgrade(headless, true);
+	}
+
+	public static void upgrade(boolean headless, boolean shutdownAfter) {
 		if (!headless) Splash.show(false);
 		String upgradeComplete = "<html>Java has been updated successfully.<br>" +
 				"Please restart " + ClassLauncher.appName() + " to apply the changes.";
@@ -307,7 +311,7 @@ public class Java {
 		finally {
 			if (!headless) Splash.hide();
 		}
-		notifyAndShutdown(upgradeComplete, headless);
+		if (shutdownAfter) notifyAndShutdown(upgradeComplete, headless);
 	}
 
 	public static void upgrade(BiConsumer<String, Double> subscriber)
