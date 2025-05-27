@@ -100,4 +100,16 @@
 			<optional>true</optional>
 		</dependency>
 	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>jpms</id>
+			<activation>
+				<jdk>[9,)</jdk>
+			</activation>
+			<properties>
+				<scijava.surefire.args>--add-opens=java.base/java.lang=ALL-UNNAMED</scijava.surefire.args>
+			</properties>
+		</profile>
+	</profiles>
 </project>
