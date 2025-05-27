@@ -77,6 +77,9 @@ public class ClassLauncher {
 	}
 
 	public static void main(final String... args) {
+		if (Boolean.getBoolean("scijava.app.unlock-modules")) {
+			ReflectionUnlocker.unlockAll();
+		}
 		tryToRun(Splash::show);
 		tryToRun(Java::check);
 		String appName = appName();
