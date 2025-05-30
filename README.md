@@ -53,7 +53,7 @@ The app-launcher uses system properties to configure its behavior:
   windows-x64=https://cdn.azul.com/zulu/bin/zulu21.36.17-ca-jdk21.0.4-win_x64.zip
   ```
   The exact naming is up to you, but for a Java distribution to be downloaded,
-  the `scijava.app.platform` property must be set and match one of the keys
+  the `scijava.app.java-platform` property must be set and match one of the keys
   indicated within the fetched remote resource.
 
 * `scijava.app.java-version-minimum`:  The minimum version of Java required by
