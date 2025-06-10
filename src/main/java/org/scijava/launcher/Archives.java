@@ -55,6 +55,8 @@ import java.util.zip.ZipFile;
  */
 public final class Archives {
 
+	private static final String NL = System.getProperty("line.separator");
+
 	private Archives() { }
 
 	private static final String TAR_PATTERN = ".*\\.tar(\\.[a-zA-Z0-9]*)?$";
@@ -118,7 +120,7 @@ public final class Archives {
 
 			Thread stderrThread = new Thread(() -> {
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
-					readLines(reader, shouldStop, line -> errorOutput.append(line).append("\n"));
+					readLines(reader, shouldStop, line -> errorOutput.append(line).append(NL));
 				}
 				catch (IOException e) {
 					appendException(errorOutput, e);
@@ -131,7 +133,7 @@ public final class Archives {
 			try {
 				int exitCode = p.waitFor();
 				if (exitCode != 0) {
-					throw new IOException("tar command failed with exit code: " + exitCode + "\n\n" + errorOutput);
+					throw new IOException("tar command failed with exit code: " + exitCode + NL + NL + errorOutput);
 				}
 			}
 			catch (InterruptedException e) {
@@ -150,10 +152,10 @@ public final class Archives {
 					stderrThread.join(500);
 				}
 				catch (InterruptedException ie) {
-					errorOutput.append("Interrupted while waiting for I/O threads to terminate\n");
+					errorOutput.append("Interrupted while waiting for I/O threads to terminate" + NL);
 				}
 				Thread.currentThread().interrupt();
-				throw new IOException("Untar operation was interrupted\n" + errorOutput, e);
+				throw new IOException("Untar operation was interrupted" + NL + errorOutput, e);
 			}
 			finally {
 				executor.shutdownNow();
@@ -177,6 +179,6 @@ public final class Archives {
 		StringWriter sw = new StringWriter();
 		PrintWriter pw = new PrintWriter(sw);
 		t.printStackTrace(pw);
-		synchronized (sb) { sb.append("\n").append(sw).append("\n"); }
+		synchronized (sb) { sb.append(NL).append(sw).append(NL); }
 	}
 }
