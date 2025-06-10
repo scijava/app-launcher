@@ -120,7 +120,13 @@ public final class Archives {
 
 			Thread stderrThread = new Thread(() -> {
 				try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
-					readLines(reader, shouldStop, line -> errorOutput.append(line).append(NL));
+					readLines(reader, shouldStop, line -> {
+						if (line.matches("^x .*")) {
+							// BSD tar output style - strip prefix and forward.
+							if (outputConsumer != null) outputConsumer.accept(line.replaceFirst("^x ", ""));
+						}
+						else errorOutput.append(line).append(NL); // Record actual error.
+					});
 				}
 				catch (IOException e) {
 					appendException(errorOutput, e);
