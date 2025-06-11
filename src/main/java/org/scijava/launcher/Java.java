@@ -178,7 +178,7 @@ public class Java {
 		String recommended = recommendedVersion();
 		for (Path javaHome : installations()) {
 			String v = readVersion(javaHome);
-			if (v != null && Versions.compare(v, recommended) >= 0) return javaHome;
+			if (v != null && Versions.compare(v, recommended) >= 0) return javaHome.getParent();
 		}
 		return null;
 	}
