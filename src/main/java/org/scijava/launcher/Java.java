@@ -59,8 +59,6 @@ public class Java {
 	/**
 	 * Checks that the version of running JVM is new enough for the application,
 	 * and if not, offers to download+install a newer version as appropriate.
-	 *
-	 * @author Curtis Rueden
 	 */
 	public static void check() throws IOException {
 		Splash.update("Checking Java version...");
