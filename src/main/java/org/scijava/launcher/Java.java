@@ -89,13 +89,14 @@ public class Java {
 		boolean warned = false;
 		if (!isManaged() && !isBundled()) {
 			String message =
-					warnAboutOldJavaVersion + "<br>" +
-					"It looks like you have manually configured your Java installation.<br>" +
-					"You can convert to automated Java upgrades, or launch as normal.<br>" +
-					questionPrompt;
+				warnAboutOldJavaVersion + "<br>" +
+				"It looks like you have manually configured your Java installation.<br>" +
+				"You can convert to automated Java upgrades, or launch as normal.<br>" +
+				questionPrompt;
 
-			if (!askIfAllowed("skipVersionWarning", message, "Convert",
-					"Launch anyway", "Launch and never warn again")) return;
+			boolean result = askIfAllowed("skipVersionWarning", message, "Convert",
+				"Launch anyway", "Launch and never warn again");
+			if (!result) return;
 			warned = true;
 		}
 
@@ -106,15 +107,15 @@ public class Java {
 			// wants to convert, otherwise we ask if they want to use the bundled JVM
 			if (!warned) {
 				String message = warnAboutOldJavaVersion + "<br>" +
-						"It appears there is a good-enough version of Java already installed at " + good +
-								"<br>" + "Would you like to use it?";
+					"It appears there is a good-enough version of Java already installed at " + good +
+					"<br>" + "Would you like to use it?";
 				if (!askIfAllowed("skipUpgradePrompt", message, "Use it",
-						"No, launch anyway", "No and never ask again")) return;
+					"No, launch anyway", "No and never ask again")) return;
 			}
 			// Set the jvm-dir to the good-enough installation.
 			updateJavaPath(good);
 			notifyAndShutdown("<html>" + ClassLauncher.appName() + " has been successfully updated to use the newer Java.<br>" +
-					"Please restart " + ClassLauncher.appName() + " to apply the changes.");
+				"Please restart " + ClassLauncher.appName() + " to apply the changes.");
 		} else {
 			// No existing good-enough installation; offer to download and install one.
 			final String javaLink = getJavaLink();
@@ -132,8 +133,8 @@ public class Java {
 			// wants to upgrade, otherwise we ask if they want to download a new JVM
 			if (!warned) {
 				String message =
-						warnAboutOldJavaVersion + "<br>" + "Would you like to " +
-						"download and install a new version of Java?";
+					warnAboutOldJavaVersion + "<br>" + "Would you like to " +
+					"download and install a new version of Java?";
 				if (!askIfAllowed("skipUpgradePrompt", message, "Upgrade",
 					"No, launch anyway", "No and never ask again")) return;
 			}
