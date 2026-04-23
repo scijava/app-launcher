@@ -94,9 +94,10 @@ public class Java {
 				"You can convert to automated Java upgrades, or launch as normal.<br>" +
 				questionPrompt;
 
-			boolean result = askIfAllowed("skipVersionWarning", message, "Convert",
+			Boolean result = askIfAllowed("skipVersionWarning", message, "Convert",
 				"Launch anyway", "Launch and never warn again");
-			if (!result) return;
+			if (result == null) System.exit(1);
+			else if (!result) return;
 			warned = true;
 		}
 
@@ -454,9 +455,9 @@ public class Java {
 	 * Helper method that prompts using the given message if the given preference
 	 * is unset. Sets the preference is the "never" option is selected. Returns
 	 * false if "no" or "never" are selected, or the preference key was previously
-	 * set.
+	 * set. Returns null if the dialog box is closed without a button choice.
 	 */
-	private static boolean askIfAllowed(String prefKey,
+	private static Boolean askIfAllowed(String prefKey,
 		String message, String yes, String no, String never)
 	{
 		Preferences prefs = Preferences.userNodeForPackage(Java.class);
@@ -469,7 +470,8 @@ public class Java {
 		switch (choice) {
 			case YES: return true;
 			case NEVER: prefs.putBoolean(prefKey, true); return false;
-			case NO: case CANCELED: default: return false;
+			case NO: return false;
+			case CANCELED: default: return null;
 		}
 	}
 
