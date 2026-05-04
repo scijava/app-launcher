@@ -80,7 +80,9 @@ public class ClassLauncher {
 		if (Boolean.getBoolean("scijava.app.unlock-modules")) {
 			ReflectionUnlocker.unlockAll();
 		}
-		if (SingleInstance.tryHandoff(args)) System.exit(0);
+		if (Boolean.getBoolean("scijava.app.single-instance")) {
+			if (SingleInstance.tryHandoff(args)) System.exit(0);
+		}
 		tryToRun(Splash::show);
 		tryToRun(Java::check);
 		String appName = appName();
