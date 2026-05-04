@@ -142,7 +142,7 @@ public class SingleInstance {
 					lockFile.toFile().delete();
 					return false;
 				}
-				for (String arg : args) out.println(arg);
+				for (String arg : args) out.println(escapeNewlines(arg));
 			}
 			Log.debug("[SingleInstance] Args handed off to existing instance.");
 			return true;
@@ -179,7 +179,7 @@ public class SingleInstance {
 			out.println(secretResponse);
 			List<String> args = new ArrayList<>();
 			String line;
-			while ((line = in.readLine()) != null) args.add(line);
+			while ((line = in.readLine()) != null) args.add(unescapeNewlines(line));
 			if (!args.isEmpty()) argReceiver.accept(args.toArray(new String[0]));
 		}
 		catch (IOException e) {
@@ -204,6 +204,28 @@ public class SingleInstance {
 	private static String toHex(byte[] bytes) {
 		StringBuilder sb = new StringBuilder(bytes.length * 2);
 		for (byte b : bytes) sb.append(String.format("%02x", b));
+		return sb.toString();
+	}
+
+	private static String escapeNewlines(String s) {
+		return s.replace("\\", "\\\\").replace("\n", "\\n").replace("\r", "\\r");
+	}
+
+	private static String unescapeNewlines(String s) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if (c == '\\' && i + 1 < s.length()) {
+				char next = s.charAt(i + 1);
+				if (next == 'n') { sb.append('\n'); i++; }
+				else if (next == 'r') { sb.append('\r'); i++; }
+				else if (next == '\\') { sb.append('\\'); i++; }
+				else sb.append(c);
+			}
+			else {
+				sb.append(c);
+			}
+		}
 		return sb.toString();
 	}
 }
