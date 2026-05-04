@@ -8,21 +8,78 @@ Jaunch is by no means the only solution for the native executable side;
 [`jpackage`](https://docs.oracle.com/en/java/javase/21/docs/specs/man/jpackage.html)
 or [jDeploy](https://www.jdeploy.com/) should also work for example.
 
-The app-launcher's most major functions are:
+## Major features
 
-* Ensure the version of Java being used is appropriate to app's requirements.
-  In case it isn't, offer to upgrade Java by downloading a more appropriate version.
+### Java version checking and upgrade
 
-* Load classes dynamically, without relying on the system classpath.
+The app-launcher verifies that the running JVM meets the application's minimum
+and recommended Java version requirements, as specified by
+`scijava.app.java-version-minimum` and `scijava.app.java-version-recommended`,
+respectively. If the version is too old, the user is offered a choice: download
+and install a newer Java automatically, switch to an already-present
+good-enough installation, or proceed anyway. The download URL is resolved
+per-platform from the file pointed to by `scijava.app.java-links`, and the new
+installation path is written back into the config file indicated by
+`scijava.app.config-file` so that the native launcher can pick it up on the
+next start.
 
-* Display a splash window while the application is starting up.
+### Splash window
+
+While the application initializes, the app-launcher displays a lightweight
+splash window with an optional logo image (given by `scijava.app.splash-image`)
+and a progress bar. The window closes automatically once a window from the main
+application appears on screen.
+
+### Single-instance enforcement
+
+When `scijava.app.single-instance` is `true`, only one JVM instance of the
+application runs at a time. The first instance opens a TCP server socket and
+writes the port number and a 128-bit random secret into a private lockfile; any
+subsequent launch reads the lockfile, forwards its command-line arguments to
+the running instance over the socket, and exits without showing the splash
+screen. The running instance receives the arguments and acts on them as
+appropriate (e.g. by opening files). The wire protocol is line-oriented plain
+text; the client sends the secret as the first line, then one argument per
+line, then closes the connection.
+
+### Module unlocking
+
+When `scijava.app.unlock-modules` is `true`, the app-launcher calls
+`ReflectionUnlocker.unlockAll()` before doing anything else. This defeats
+Java 9+ JPMS encapsulation by calling `implAddOpensToAllUnnamed()` on every
+module, allowing deep reflection without needing `--add-opens` JVM arguments
+except for a single `--add-opens=java.base/java.lang=ALL-UNNAMED` argument.
+
+### Swing Look & Feel configuration
+
+Setting `scijava.app.look-and-feel` to a fully-qualified class name causes the
+app-launcher to install that `LookAndFeel` before creating any UI components.
+This keeps the splash and error dialogs visually consistent with the main
+application, and enables smarter HiDPI handling via Look & Feels such as
+[FlatLaf](https://www.formdev.com/flatlaf/).
+
+### Class launching
+
+`ClassLauncher` is the main entry point. It accepts the target class name and
+passes any remaining arguments to that class's `main` method. If the target
+class fails to load because it was compiled for a newer JVM
+(`UnsupportedClassVersionError`), the launcher catches the error and offers the
+user a Java upgrade before exiting.
 
 ## Supported configuration
 
 The app-launcher uses system properties to configure its behavior:
 
-* `scijava.app.name`: Name of the application being launched.
-  Used in message dialogs if/when interacting with the user.
+* `scijava.app.name`: Human-readable name of the application being launched.
+  Used in splash progress messages and in user-facing dialogs ("Please restart
+  Fizzbuzz to apply the changes", "Fizzbuzz has been successfully updated to
+  use the newer Java", etc.).
+
+* `scijava.app.directory`: Path to the application's installation directory.
+  Used to convert Java installation paths to relative form when writing to the
+  config file, improving portability when the app is moved or accessed from
+  multiple operating systems. If unset or pointing to a nonexistent path,
+  absolute paths are used instead.
 
 * `scijava.app.splash-image`: Resource path to an image for the splash window,
   to be loaded using `ClassLoader#getResource`. It can be either its own file
@@ -35,7 +92,7 @@ The app-launcher uses system properties to configure its behavior:
   behavior on HiDPI displays using smarter Look & Feels such as
   [FlatLaf](https://www.formdev.com/flatlaf/).
 
-* `scijava.app.java-root`: directory containing "bundled" installations of Java.
+* `scijava.app.java-root`: Directory containing "managed" installations of Java.
   The `Java.root()` method reports this value if it points to a valid directory.
   The `Java.check()` method will look here (via `Java.root()`) for which JVMs
   are already present locally, and also unpack any newly downloaded JVM into
@@ -56,17 +113,48 @@ The app-launcher uses system properties to configure its behavior:
   the `scijava.app.java-platform` property must be set and match one of the keys
   indicated within the fetched remote resource.
 
-* `scijava.app.java-version-minimum`:  The minimum version of Java required by
-  the application. It can be a standalone number like 11, in which case it is
-  treated as a major version, or a dot-separated sequence of digits, which case
-  version comparisons are done digit by digit (see `Versions.compare`).
-  This value is used by `Java.check()` (via `Java.minimumVersion()`) to
-  warn the user accordingly if the running Java version is not good enough.
+* `scijava.app.java-platform`: Identifies the current platform, e.g.
+  `linux-x64`, `macos-arm64`, `windows-x64`. Must match one of the keys in the
+  file pointed to by `scijava.app.java-links` for a Java download to succeed.
+  Typically set by the native launcher. If no matching entry is found, the
+  detected platform string is included in the error message shown to the user.
+
+* `scijava.app.java-version-minimum`: The minimum version of Java required by
+  the application. It can be a standalone number like `11`, in which case it is
+  treated as a major version, or a dot-separated sequence of digits, in which
+  case version comparisons are done digit by digit (see `Versions.compare`).
+  This value is used by `Java.check()` to warn the user if the running Java
+  version is not good enough, and to determine whether the warning is framed as
+  a hard requirement or a strong recommendation.
 
 * `scijava.app.java-version-recommended`: The minimum version of Java the
   application would *prefer* to use. Same syntax as `java-version-minimum`.
-  This value is used by `Java.check()` (via `Java.recommendedVersion()`) to
-  warn the user accordingly if the running Java version is not ideal.
+  If the running version is at or above this value no warning is shown, even if
+  it is below `java-version-minimum` — the minimum check only fires when both
+  properties are set and the version is below both.
+
+* `scijava.app.config-file`: Path to a key=value configuration file (typically
+  the native launcher's config file, e.g. a Jaunch-compatible CFG file) where
+  the `jvm-dir` entry is updated after a Java installation is selected or
+  downloaded. This is how the app-launcher tells the native launcher which JVM
+  to use on the next startup.
+
+* `scijava.app.single-instance`: Set to `true` to enable single-instance mode.
+  The first launch listens on a dynamically chosen TCP port and writes the port
+  and a 128-bit random secret into an owner-readable-only lockfile. Subsequent
+  launches read the lockfile, hand off their arguments to the running instance
+  over the socket, and exit immediately. The lockfile name is derived from
+  `scijava.app.name`.
+
+* `scijava.app.unlock-modules`: Set to `true` to call
+  `ReflectionUnlocker.unlockAll()` at startup, opening all Java modules to
+  unnamed-module reflection. This is equivalent to passing `--add-opens` for
+  every module but requires no knowledge of which modules need to be opened;
+  only `--add-opens=java.base/java.lang=ALL-UNNAMED` need be passed.
+
+* `scijava.app.debug`: Set to `true` to enable verbose debug logging to
+  `stderr`. Debug mode can also be enabled via `scijava.log.level=debug` or by
+  setting the `DEBUG_APP_LAUNCHER` environment variable.
 
 ## Provenance
 
