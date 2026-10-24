@@ -4,6 +4,7 @@
 /.idea/
 # Eclipse #
 /.classpath
+/.factorypath
 /.project
 /.settings/
 
