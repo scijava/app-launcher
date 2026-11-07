@@ -1,5 +1,5 @@
 [![](https://img.shields.io/maven-central/v/org.scijava/app-launcher.svg)](https://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.scijava%22%20AND%20a%3A%22app-launcher%22)
-[![](https://github.com/scijava/app-launcher/actions/workflows/build.yml/badge.svg)](https://github.com/scijava/app-launcher/actions/workflows/build.yml)
+[![Build Status](https://github.com/scijava/app-launcher/actions/workflows/build.yml/badge.svg)](https://github.com/scijava/app-launcher/actions/workflows/build.yml)
 
 The SciJava app-launcher provides an entry point into SciJava applications,
 notably [Fiji](https://fiji.sc/). Its design synergizes well with the
