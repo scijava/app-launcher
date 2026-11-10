@@ -138,6 +138,9 @@ public final class Archives {
 
 			try {
 				int exitCode = p.waitFor();
+				// Note: The process can exit before its output is fully consumed.
+				stdoutThread.join();
+				stderrThread.join();
 				if (exitCode != 0) {
 					throw new IOException("tar command failed with exit code: " + exitCode + NL + NL + errorOutput);
 				}
