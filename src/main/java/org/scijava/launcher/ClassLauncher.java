@@ -29,12 +29,23 @@
 
 package org.scijava.launcher;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Pattern;
 
 /**
  * This class acts as a central entry point into Java applications.
@@ -76,7 +87,96 @@ public class ClassLauncher {
 		return null;
 	}
 
+	private static final String WARMUP_THREADS_PROPERTY =
+		"scijava.app.warmup-threads";
+	private static final int DEFAULT_WARMUP_THREADS = 64;
+	private static final Set<File> WARMED_JARS = ConcurrentHashMap.newKeySet();
+
+	/**
+	 * Opens and closes unwarmed {@code .jar} files on the classpath in parallel
+	 * across multiple threads so real-time antivirus scanners (e.g. Microsoft
+	 * Defender) scan them concurrently before the JVM's {@code URLClassPath}
+	 * walks the classpath sequentially.
+	 */
+	public static void warmClassPath() {
+		final int maxThreads = Integer.getInteger(
+			WARMUP_THREADS_PROPERTY, DEFAULT_WARMUP_THREADS);
+		if (maxThreads <= 1) return;
+
+		final List<File> jarsToWarm = new ArrayList<>();
+		final ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		for (ClassLoader cl = loader; cl != null; cl = cl.getParent()) {
+			if (cl instanceof URLClassLoader) {
+				for (final URL url : ((URLClassLoader) cl).getURLs()) {
+					if ("file".equals(url.getProtocol())) {
+						try {
+							addJarIfUnwarmed(new File(url.toURI()), jarsToWarm);
+						}
+						catch (final URISyntaxException | IllegalArgumentException exc) {
+							addJarIfUnwarmed(new File(url.getPath()), jarsToWarm);
+						}
+					}
+				}
+			}
+		}
+
+		final String classPath = System.getProperty("java.class.path");
+		if (classPath != null && !classPath.isEmpty()) {
+			for (final String element : classPath.split(
+				Pattern.quote(File.pathSeparator)))
+			{
+				if (!element.isEmpty()) {
+					addJarIfUnwarmed(new File(element), jarsToWarm);
+				}
+			}
+		}
+
+		final int count = jarsToWarm.size();
+		if (count <= 1) return;
+
+		final int numThreads = Math.min(count, maxThreads);
+		final AtomicInteger cursor = new AtomicInteger(0);
+		final Thread[] threads = new Thread[numThreads];
+		for (int t = 0; t < numThreads; t++) {
+			final Thread thread = new Thread(() -> {
+				int idx;
+				while ((idx = cursor.getAndIncrement()) < count) {
+					try (FileInputStream in = new FileInputStream(jarsToWarm.get(idx))) {
+						// Opening and closing the stream triggers the OS/AV scan.
+					}
+					catch (final IOException exc) {
+						// Ignore missing or unreadable classpath entries.
+					}
+				}
+			}, "SciJava-Launcher-Warmer-" + t);
+			thread.setDaemon(true);
+			thread.start();
+			threads[t] = thread;
+		}
+
+		for (final Thread thread : threads) {
+			try {
+				thread.join();
+			}
+			catch (final InterruptedException exc) {
+				Thread.currentThread().interrupt();
+				break;
+			}
+		}
+	}
+
+	private static void addJarIfUnwarmed(final File file,
+		final List<File> jarsToWarm)
+	{
+		if (file != null && file.getName().endsWith(".jar") &&
+			WARMED_JARS.add(file))
+		{
+			jarsToWarm.add(file);
+		}
+	}
+
 	public static void main(final String... args) {
+		tryToRun(ClassLauncher::warmClassPath);
 		if (Boolean.getBoolean("scijava.app.unlock-modules")) {
 			ReflectionUnlocker.unlockAll();
 		}

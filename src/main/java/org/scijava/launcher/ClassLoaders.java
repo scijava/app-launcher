@@ -130,6 +130,16 @@ final class ClassLoaders {
 	}
 
 	static URL loadResource(Class<?> fallback, String path) {
+		// First check if path is an existing local file (e.g. splash image path)
+		// to avoid scanning every JAR on the classpath for a filesystem path.
+		try {
+			File resourceFile = new File(path);
+			if (resourceFile.exists()) return resourceFile.toURI().toURL();
+		}
+		catch (MalformedURLException exc) {
+			Log.debug(exc);
+		}
+
 		// Try loading the resource using available class loaders.
 		URL url = loaders(fallback)
 			.map(classLoader -> classLoader.getResource(path))
@@ -137,15 +147,6 @@ final class ClassLoaders {
 			.findFirst()
 			.orElse(null);
 		if (url != null) return url;
-
-		// No class loader loaded it; try treating it as a file path.
-		try {
-			File resourceFile = new File(path);
-			if (resourceFile.exists()) return new File(path).toURI().toURL();
-		}
-		catch (MalformedURLException exc) {
-			Log.debug(exc);
-		}
 
 		throw new IllegalArgumentException("Failed to load resource: " + path);
 	}
